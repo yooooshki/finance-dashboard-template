@@ -142,8 +142,6 @@ Authorization: Bearer <your APP_PASSPHRASE>
   the timezone appears in `lib/overview-data.ts`, `app/(main)/add/page.tsx`, and
   `headerToSGT` in `lib/gmail.ts` (which converts an email's Date header to
   UTC+8).
-- `@anthropic-ai/sdk` is still in `package.json` from a removed AI-insight
-  feature. Nothing imports it; drop it if you like.
 
 `CLAUDE.md` holds the working rules for anyone — human or AI — changing this
 code. Read it before making changes, and keep it open in Claude when you do.
