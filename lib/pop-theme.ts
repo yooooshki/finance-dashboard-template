@@ -53,7 +53,7 @@ export const CLASSIC = makeTheme({
   bg: '#FFFDF5',
   ink: '#101010',
   primary: '#2E5BFF',
-  secondary: '#E8FF3C',
+  secondary: '#FFD54D',
   tertiary: '#FF90C2',
   extra: ['#00C48C', '#FF7A2E', '#9C6BFF'],
   ok: '#00C48C',
