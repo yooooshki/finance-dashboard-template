@@ -36,7 +36,7 @@ traps (publish the consent screen, and use a *Web application* client).
 | Page | What's there |
 |---|---|
 | `/` Overview | Total spend for the period, spend by category, spend by card, a six-period trend line, and a meter per budget |
-| `/pending` | Transactions parsed out of emails, waiting for you to categorise and commit |
+| `/pending` | Transactions parsed out of emails, waiting for you to categorise and commit — with a **Run scan now** button to fetch more |
 | `/history` | Every committed transaction, filterable |
 | `/add` | Manual entry form |
 | `/e-statements` | Upload a PDF statement to surface card–merchant pairs you haven't seen |

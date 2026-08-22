@@ -14,6 +14,11 @@ export interface PendingTransaction {
   status: string;
 }
 
+export interface ScanResult {
+  imported: number;
+  skipped: number;
+}
+
 export function formatTxnDate(date: number, month: number, year: number): string {
   return new Date(year, month - 1, date).toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -34,6 +39,9 @@ export function usePending(initialTransactions: PendingTransaction[]) {
   );
   const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set());
   const [commitAllLoading, setCommitAllLoading] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const addLoading = (id: string) =>
     setLoadingIds((prev) => new Set(prev).add(id));
@@ -94,6 +102,57 @@ export function usePending(initialTransactions: PendingTransaction[]) {
     setCommitAllLoading(false);
   }
 
+  /**
+   * Re-read the pending list from the server.
+   *
+   * Needed because `transactions` is seeded from props via useState, so the
+   * server component re-rendering (e.g. router.refresh()) would NOT update it.
+   * Existing category picks win over the server's, so a scan never discards
+   * choices the user has already made on screen.
+   */
+  async function refreshPending() {
+    const res = await fetch('/api/transactions?status=pending&limit=200');
+    if (!res.ok) return;
+    const body = await res.json();
+    const rows: PendingTransaction[] = (body.data ?? []).map((t: PendingTransaction) => ({
+      id: t.id,
+      date: t.date,
+      month: t.month,
+      year: t.year,
+      amount: t.amount,
+      category: t.category,
+      payment_type: t.payment_type,
+      detail: t.detail,
+      status: t.status,
+    }));
+    setTransactions(rows);
+    setSelectedCategories((prev) => {
+      const next = { ...prev };
+      for (const r of rows) if (!next[r.id] && r.category) next[r.id] = r.category;
+      return next;
+    });
+  }
+
+  async function runScan() {
+    setScanning(true);
+    setScanResult(null);
+    setScanError(null);
+    try {
+      const res = await fetch('/api/settings/scan', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        setScanError(data.error ?? 'Scan failed.');
+        return;
+      }
+      setScanResult({ imported: data.imported, skipped: data.skipped });
+      if (data.imported > 0) await refreshPending();
+    } catch {
+      setScanError('An unexpected error occurred.');
+    } finally {
+      setScanning(false);
+    }
+  }
+
   const eligibleCount = transactions.filter((t) => selectedCategories[t.id]).length;
 
   return {
@@ -106,5 +165,9 @@ export function usePending(initialTransactions: PendingTransaction[]) {
     discard,
     commitAll,
     eligibleCount,
+    scanning,
+    scanResult,
+    scanError,
+    runScan,
   };
 }

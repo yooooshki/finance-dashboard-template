@@ -25,6 +25,10 @@ export default function PendingList({
     discard,
     commitAll,
     eligibleCount,
+    scanning,
+    scanResult,
+    scanError,
+    runScan,
   } = usePending(initialTransactions);
 
   return (
@@ -36,16 +40,34 @@ export default function PendingList({
         >
           Sort it out
         </h1>
-        {eligibleCount >= 1 && (
+        <div className="flex flex-wrap items-center gap-3">
           <button
-            onClick={commitAll}
-            disabled={commitAllLoading}
-            className={`${btnAccent} px-6 py-2.5 text-base`}
+            onClick={runScan}
+            disabled={scanning}
+            className={`${btnGhost} px-5 py-2.5 text-base`}
           >
-            {commitAllLoading ? 'Committing…' : `Commit all (${eligibleCount})`}
+            {scanning ? 'Scanning…' : 'Run scan now'}
           </button>
-        )}
+          {eligibleCount >= 1 && (
+            <button
+              onClick={commitAll}
+              disabled={commitAllLoading}
+              className={`${btnAccent} px-6 py-2.5 text-base`}
+            >
+              {commitAllLoading ? 'Committing…' : `Commit all (${eligibleCount})`}
+            </button>
+          )}
+        </div>
       </div>
+
+      {scanResult && (
+        <p className="mt-4 inline-block border-[3px] border-(--ink) bg-(--tertiary) px-3 py-1 text-sm font-black text-(--on-accent)">
+          {scanResult.imported} imported · {scanResult.skipped} skipped
+        </p>
+      )}
+      {scanError && (
+        <p className="mt-4 text-sm font-black uppercase text-(--danger)">{scanError}</p>
+      )}
 
       {transactions.length === 0 ? (
         <div className="mt-10 border-[3px] border-dashed border-(--ink) py-20 text-center">
