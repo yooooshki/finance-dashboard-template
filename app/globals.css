@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+/* Pop Ledger design tokens.
+   Light = Classic colourway, dark = Arcade colourway.
+   `.dark` is applied to <html> by the theme script / toggle. */
+:root {
+  --bg: #FFFDF5;
+  --ink: #101010;
+  --primary: #2E5BFF;
+  --secondary: #E8FF3C;
+  --tertiary: #FF90C2;
+  --card: #FFFFFF;
+  --on-primary: #FFFFFF;
+  --on-accent: #101010;
+  --danger: #E5484D;
+}
+
+.dark {
+  --bg: #15161E;
+  --ink: #F4F2EC;
+  --primary: #FF477E;
+  --secondary: #04E762;
+  --tertiary: #FFD23F;
+  --card: #1F2130;
+  --on-primary: #15161E;
+  --on-accent: #15161E;
+  --danger: #FF6B6B;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-grotesk), sans-serif;
+  transition: background-color 200ms ease, color 200ms ease;
+}

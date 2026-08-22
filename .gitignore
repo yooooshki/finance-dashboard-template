@@ -1,0 +1,15 @@
+.env.local
+.env
+node_modules/
+.next/
+*.json.bak
+credentials.json
+token.json
+.vercel
+
+# OS metadata
+.DS_Store
+# TypeScript incremental build artifact
+*.tsbuildinfo
+# Machine-local Claude Code permissions
+.claude/settings.local.json
