@@ -62,13 +62,3 @@ export function isValidSession(cookieValue: string | undefined): boolean {
   if (!expected || !cookieValue) return false;
   return safeEqual(cookieValue, expected);
 }
-
-/**
- * Bearer form, for the Apple Shortcut and any other headless caller:
- *   Authorization: Bearer <APP_PASSPHRASE>
- */
-export function hasValidBearer(headers: Headers): boolean {
-  const header = headers.get('authorization');
-  if (!header?.startsWith('Bearer ')) return false;
-  return isValidPassphrase(header.slice(7));
-}

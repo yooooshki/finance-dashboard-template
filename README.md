@@ -84,32 +84,18 @@ edit before the e-statements page will work.
 
 ---
 
-## Logging from your phone
+## How a transaction gets in
 
-`POST /api/log` accepts a single transaction and commits it immediately —
-useful for an Apple Shortcut on the home screen:
+There are exactly two ways, and no others:
 
-```json
-{
-  "date": 15,
-  "month": 5,
-  "year": 2026,
-  "amount": 12.50,
-  "category": "Food",
-  "payment_type": "My Credit Card",
-  "detail": "Lunch",
-  "source": "shortcut"
-}
-```
+| Source | Route in | Lands as |
+|---|---|---|
+| `email` | the daily Gmail scan | `pending` — you review it before it counts |
+| `manual` | the `/add` page | `committed` immediately |
 
-`GET /api/config` returns current category and payment-type names, so the
-Shortcut can offer them as a menu instead of hardcoding them.
-
-Both routes are behind the passphrase, so the Shortcut must send it as a header:
-
-```
-Authorization: Bearer <your APP_PASSPHRASE>
-```
+Every page and API route requires a browser session. There is no headless entry
+point — the passphrase is not accepted as an API bearer token, so a script or
+phone shortcut cannot post transactions.
 
 ---
 

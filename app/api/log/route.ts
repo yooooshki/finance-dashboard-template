@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { requireAuth } from '@/lib/require-auth';
 
-const VALID_SOURCES = ['shortcut', 'manual'] as const;
-type Source = (typeof VALID_SOURCES)[number];
-
 export async function POST(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   let body: Record<string, unknown>;
@@ -16,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const { date, month, year, amount, category, payment_type, detail, source } = body;
+  const { date, month, year, amount, category, payment_type, detail } = body;
 
   // Validate required fields
   if (
@@ -34,18 +31,13 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const resolvedSource: Source =
-    typeof source === 'string' && VALID_SOURCES.includes(source as Source)
-      ? (source as Source)
-      : 'shortcut';
-
-  // Rate limit: max 5 manual/shortcut inserts per second
+  // Rate limit: max 5 manual inserts per second
   const oneSecondAgo = new Date(Date.now() - 1000).toISOString();
   const { count: recentCount, error: rateError } = await supabase
     .from('transactions')
     .select('id', { count: 'exact', head: true })
     .gte('created_at', oneSecondAgo)
-    .in('source', ['shortcut', 'manual']);
+    .eq('source', 'manual');
   if (rateError) {
     console.error('log: rate-limit check error', rateError);
     return NextResponse.json({ error: 'Failed to insert transaction' }, { status: 500 });
@@ -68,7 +60,10 @@ export async function POST(req: NextRequest) {
       category: category.trim(),
       payment_type: payment_type.trim(),
       detail: detail.trim(),
-      source: resolvedSource,
+      // Always 'manual'. This route is the /add form's only; email-ingested
+      // rows are inserted as 'pending' by lib/email-scan-logic.ts, and any
+      // `source` sent in the body is deliberately ignored.
+      source: 'manual',
       status: 'committed',
     })
     .select('id')

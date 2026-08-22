@@ -17,7 +17,7 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const { id } = await params;
@@ -56,7 +56,7 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const { id } = await params;

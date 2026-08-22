@@ -19,7 +19,7 @@ function redact<T extends Row>(row: T) {
 }
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const { data, error } = await supabase
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const body = await req.json();

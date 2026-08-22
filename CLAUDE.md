@@ -23,8 +23,8 @@ setup.
   aggregate query needs the same
   `.not('category', 'in', '("Savings","Investments")')` filter.
 - **Transactions stay `pending` until the user commits them.** Only `/api/log`
-  (the Shortcut and the manual form) inserts as `committed`. Don't add new
-  commit-on-insert paths.
+  (the `/add` form) inserts as `committed`, and `'manual'` is the only source it
+  accepts. Don't add new commit-on-insert paths.
 - **Rough.js is the only chart engine.** Charts live in
   `components/charts/rough-charts.tsx`, themed from `lib/pop-theme.ts`.
 - **Ask before anything destructive** — deleting files, dropping tables,

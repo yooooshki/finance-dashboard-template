@@ -22,7 +22,7 @@ export interface FlaggedTransaction {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   let formData: FormData;

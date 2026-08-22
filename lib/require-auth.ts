@@ -5,16 +5,16 @@
 
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { SESSION_COOKIE, authEnabled, isMisconfigured, isValidSession, hasValidBearer } from '@/lib/auth';
+import { SESSION_COOKIE, authEnabled, isMisconfigured, isValidSession } from '@/lib/auth';
 
 /**
  * Returns a response to send back when the caller is not allowed in, or null
  * when the request may proceed.
  *
- *   const denied = await requireAuth(req.headers);
+ *   const denied = await requireAuth();
  *   if (denied) return denied;
  */
-export async function requireAuth(headers: Headers): Promise<NextResponse | null> {
+export async function requireAuth(): Promise<NextResponse | null> {
   if (isMisconfigured()) {
     return NextResponse.json(
       { error: 'APP_PASSPHRASE is not set on this deployment.' },
@@ -22,8 +22,6 @@ export async function requireAuth(headers: Headers): Promise<NextResponse | null
     );
   }
   if (!authEnabled()) return null;
-
-  if (hasValidBearer(headers)) return null;
 
   const store = await cookies();
   if (isValidSession(store.get(SESSION_COOKIE)?.value)) return null;

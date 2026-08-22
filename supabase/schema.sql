@@ -39,7 +39,7 @@ CREATE TABLE transactions (
   category     text         REFERENCES categories(name),
   payment_type text         REFERENCES payment_types(name),
   detail       text,
-  source       text         NOT NULL CHECK (source IN ('email', 'shortcut', 'manual')),
+  source       text         NOT NULL CHECK (source IN ('email', 'manual')),
   status       text         NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'committed')),
   created_at   timestamptz  NOT NULL DEFAULT now()
 );

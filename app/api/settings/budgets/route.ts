@@ -6,7 +6,7 @@ const MIGRATION_HINT =
   'Budgets table not found. Run supabase/migrations/001_cycles_and_budgets.sql in the Supabase SQL editor.';
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const { data, error } = await supabase
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const body = await req.json();

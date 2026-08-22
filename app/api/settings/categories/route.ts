@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import { requireAuth } from '@/lib/require-auth';
 
 export async function GET(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const { data, error } = await supabase.from('categories').select('*').order('name');
@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const denied = await requireAuth(req.headers);
+  const denied = await requireAuth();
   if (denied) return denied;
 
   const { name } = await req.json();
