@@ -1,5 +1,15 @@
 # Troubleshooting
 
+**Start here:**
+
+```bash
+npm run doctor
+```
+
+It checks every part of the install — keys, database, Gmail, the daily scan —
+without changing anything, and each failure names the step that fixes it.
+Most of the sections below are the long form of one of its lines.
+
 Find your symptom below. If it isn't here, paste the full error into Claude
 using the template in [SETUP.md](SETUP.md#how-to-use-claude-while-you-do-this).
 
@@ -76,6 +86,8 @@ to confirm five tables exist.
 ## Gmail scanning
 
 ### `invalid_grant` — and it worked until about a week ago
+
+`npm run doctor` reports this as: *refresh token rejected*.
 
 Your Google project is still in **Testing** mode, which expires access after
 7 days. This is the single most common failure with this setup.

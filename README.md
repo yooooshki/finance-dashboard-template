@@ -53,9 +53,52 @@ Two ideas run through the whole thing:
 
 ---
 
+## Is it working?
+
+```bash
+npm run doctor
+```
+
+Read-only — it changes nothing. It checks your keys, your database, your
+Gmail connection and the daily scan, and every failure names the setup step
+that fixes it. Run it first whenever something looks wrong.
+
+## Setting up
+
+```bash
+npm run setup
+```
+
+Walks you through it: asks for your two Supabase keys, invents your passwords
+so you do not have to, opens each Google Cloud page in turn and tells you what
+to click on it, then connects Gmail with one click in the browser instead of
+the tour through Google's OAuth Playground. Safe to run again — it keeps
+anything you have already filled in, and backing out part-way keeps whatever
+you entered before that.
+
+[SETUP.md](SETUP.md) is the long version, with screenshots of where each key
+lives. You still need to create the accounts yourself and paste the database
+schema in once; everything else the command does for you.
+
+---
+
+## Back up your data
+
+```bash
+npm run backup
+```
+
+Your database is the only copy of your spending history. This writes all of
+it to `../mooolah-backups/` — outside the project folder, so it can never be
+committed — as a JSON file you can restore from and a CSV you can open in a
+spreadsheet. Do it weekly. `npm run doctor` will nag you once the newest
+backup is more than ten days old.
+
+---
+
 ## Which banks work
 
-Email parsing ships for **UOB** and **Citibank Singapore** only.
+Email parsing ships for **UOB**, **Citibank Singapore** and **DBS** only.
 PDF e-statement parsing ships for **UOB, Citibank, DBS and OCBC**.
 
 Everything else in the app — manual entry, categories, budgets, charts,
@@ -64,12 +107,14 @@ Gmail step and log through `/add`, or add a parser.
 
 ### Adding your bank
 
-Email parsers live in `lib/parsers/`. Each takes the plain-text email body and
+Email parsers live in `lib/parsers/`. Each takes the email body as text and
 returns `{ amount, detail, payment_type } | null` — returning `null` for
 anything it isn't certain about, so a misread never becomes a transaction.
+Banks that send HTML-only alerts (DBS is one) are flattened to text by
+`lib/html-to-text.ts` first, so a parser never has to read markup.
 
-To add one: write `lib/parsers/<bank>.ts` in the shape of the existing two, then
-register its sender address in two places — the Gmail search query in
+To add one: write `lib/parsers/<bank>.ts` in the shape of the existing three,
+then register its sender address in two places — the Gmail search query in
 `lib/gmail.ts` and the sender dispatch in `lib/email-scan-logic.ts`.
 
 This is a good task to hand to Claude. Forward yourself a bank alert, **redact

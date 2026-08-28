@@ -3,8 +3,49 @@
 
 import { supabase } from './supabase';
 import { fetchUnreadEmails, markAsRead, headerToSGT } from './gmail';
-import { parseUOB } from './parsers/uob';
+import { parseUOB, type ParsedTransaction } from './parsers/uob';
 import { parseCitibank } from './parsers/citibank';
+import { parseDBS } from './parsers/dbs';
+
+type DateFields = { date: number; month: number; year: number };
+
+/**
+ * What a scan would do with one email.
+ *
+ * Exported so `npm run doctor` can simulate a scan without writing anything:
+ * a diagnostic that re-implements the dispatch would drift from the cron and
+ * then lie about it.
+ */
+export type ScanOutcome =
+  | { kind: 'transaction'; transaction: ParsedTransaction }
+  | { kind: 'reversal' }
+  | { kind: 'unrecognised' }
+  | { kind: 'unknown-sender' };
+
+/** Route one email to the parser for its sender. Pure — no DB, no Gmail, no writes. */
+export function classifyEmail(
+  from: string,
+  body: string,
+  dateFields: DateFields,
+  paymentTypeMap: Map<string, string>,
+): ScanOutcome {
+  const fromLower = from.toLowerCase();
+
+  let parsed: ParsedTransaction | 'reversal' | null;
+  if (fromLower.includes('unialerts@uobgroup.com')) {
+    parsed = parseUOB(body, dateFields, paymentTypeMap);
+  } else if (fromLower.includes('alerts@citibank.com.sg')) {
+    parsed = parseCitibank(body, dateFields, paymentTypeMap);
+  } else if (fromLower.includes('ibanking.alert@dbs.com')) {
+    parsed = parseDBS(body, dateFields, paymentTypeMap);
+  } else {
+    return { kind: 'unknown-sender' };
+  }
+
+  if (parsed === null) return { kind: 'unrecognised' };
+  if (parsed === 'reversal') return { kind: 'reversal' };
+  return { kind: 'transaction', transaction: parsed };
+}
 
 export async function runEmailScan(): Promise<{ imported: number; skipped: number }> {
   const { data: paymentTypes, error: ptError } = await supabase
@@ -25,31 +66,28 @@ export async function runEmailScan(): Promise<{ imported: number; skipped: numbe
 
   for (const email of emails) {
     const dateFields = headerToSGT(email.dateHeader);
-    const fromLower = email.from.toLowerCase();
+    const outcome = classifyEmail(email.from, email.plainText, dateFields, paymentTypeMap);
 
-    let parsed;
-    if (fromLower.includes('unialerts@uobgroup.com')) {
-      parsed = parseUOB(email.plainText, dateFields, paymentTypeMap);
-    } else if (fromLower.includes('alerts@citibank.com.sg')) {
-      parsed = parseCitibank(email.plainText, dateFields, paymentTypeMap);
-    } else {
+    if (outcome.kind === 'unknown-sender') {
       console.log(`email-scan: unknown sender "${email.from}", skipping`);
       skipped++;
       continue;
     }
 
-    if (parsed === null) {
+    if (outcome.kind === 'unrecognised') {
       console.log(`email-scan: unrecognised format from "${email.from}" (id: ${email.id}), skipping`);
       skipped++;
       continue;
     }
 
-    if (parsed === 'reversal') {
+    if (outcome.kind === 'reversal') {
       console.log(`email-scan: reversal received (id: ${email.id}), skipping`);
       await markAsRead(email.id);
       skipped++;
       continue;
     }
+
+    const parsed = outcome.transaction;
 
     const { data: mc } = await supabase
       .from('merchant_categories')

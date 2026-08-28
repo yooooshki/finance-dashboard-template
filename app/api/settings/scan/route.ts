@@ -11,7 +11,11 @@ export async function POST(req: NextRequest) {
     const result = await runEmailScan();
     return NextResponse.json(result);
   } catch (err) {
+    // Detail stays server-side. A scan failure carries Gmail and Supabase error
+    // text — token states, project URLs, column names — and this route is
+    // reachable from the browser, so the caller gets a generic message and the
+    // operator reads the real one in the function logs (same rule as ecfee10).
     console.error('settings/scan: error', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Scan failed' }, { status: 500 });
   }
 }

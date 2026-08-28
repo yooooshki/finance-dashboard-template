@@ -188,6 +188,11 @@ Click **Table Editor** in the sidebar and you should now see five tables:
 
 ## Step 4 — Put your keys in the app
 
+> **Shortcut:** `npm run setup` does this whole step — it asks for the two
+> Supabase keys, generates both passwords, and writes `.env.local` for you.
+> It is safe to run more than once. The manual instructions below still work
+> if you prefer to see every value yourself.
+
 Your keys live in a file called `.env.local`, which never leaves your computer.
 It's already listed in `.gitignore`, so Git will refuse to upload it.
 
@@ -280,12 +285,25 @@ This lets the app read your bank's alert emails and turn them into
 transactions automatically.
 
 > **Check this first:** out of the box the app only understands alert emails
-> from **UOB** and **Citibank Singapore**. Another bank needs a parser written
-> for it — Claude can help, see *Adding your bank* in the README. If you're not
-> with those banks, **skip this step** and log spending through `/add`.
+> from **UOB**, **Citibank Singapore** and **DBS**. Another bank needs a parser
+> written for it — Claude can help, see *Adding your bank* in the README. If
+> you're not with those banks, **skip this step** and log spending through
+> `/add`.
 
 This is the fiddliest part of the whole setup. It's ten minutes of clicking
 through Google's console. Go slowly and it's fine.
+
+> **`npm run setup` will walk you through it.** Answer "no" when it asks
+> whether you already have an OAuth client, and it opens each of the five
+> Google pages in turn and tells you what to click on each one. The steps
+> below are the same thing written out, with more detail — read them if you
+> would rather see where you are going first.
+>
+> The clicking itself cannot be automated: Google has no API for creating an
+> OAuth client, and the app cannot ship a shared one, because Gmail access is
+> a "restricted" permission — an app that has not been through Google's paid
+> security assessment is capped at 100 users. Your own client has no such cap
+> because you are its only user.
 
 ### 6a — Create a Google Cloud project
 
@@ -357,7 +375,25 @@ GMAIL_CLIENT_SECRET=...
 ### 6f — Get a refresh token
 
 A refresh token is a long-lived pass that lets the app check your mail without
-you logging in every time. Google has a tool that hands you one.
+you logging in every time.
+
+**The easy way — let the app do it:**
+
+```bash
+npm run setup
+```
+
+Answer yes at the Gmail step and paste in the Client ID and secret from 6e. It
+opens Google's consent screen, catches the answer, checks the token works
+against your inbox, and writes it into `.env.local` for you. Then skip to 6g.
+
+If your OAuth client is a *Web application* rather than a *Desktop app*, add
+`http://localhost:8910` to its authorised redirect URIs first, or Google will
+refuse the redirect. On a machine with no browser, run
+`SETUP_NO_BROWSER=1 npm run setup` and open the printed link elsewhere.
+
+**The manual way** — if you would rather do it yourself, Google has a tool that
+hands you one.
 
 1. Go to
    [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground).
@@ -392,7 +428,7 @@ reads `.env.local` on startup, so your new keys won't load until you restart.
 
 Go to **Settings** → **Run scan now**.
 
-The scan looks for **unread** emails from those two banks **received in the
+The scan looks for **unread** emails from those three banks **received in the
 last 24 hours**. If you have none, it will correctly find nothing. To test it
 properly, mark a recent bank alert as unread in Gmail first, then scan again
 and check the **/pending** page.

@@ -4,7 +4,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "verify-schema": "npx tsx --env-file=.env.local scripts/verify-schema.ts"
+    "verify-schema": "npx tsx --env-file=.env.local scripts/verify-schema.ts",
+    "doctor": "npx tsx --env-file=.env.local scripts/doctor.ts",
+    "backup": "npx tsx --env-file=.env.local scripts/backup.ts",
+    "setup": "npx tsx scripts/setup.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
