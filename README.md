@@ -26,7 +26,7 @@ npm run dev
 ```
 
 Gmail ingestion needs a Google OAuth client and a refresh token —
-[Step 6](SETUP.md#step-6--automatic-email-scanning-optional) covers the two
+[Step 4](SETUP.md#step-4--google-for-automatic-email-scanning-optional) covers the two
 traps (publish the consent screen, and use a *Web application* client).
 
 ---

@@ -94,7 +94,7 @@ Your Google project is still in **Testing** mode, which expires access after
 
 Fix it permanently: Google Cloud Console → **Google Auth Platform** →
 **Audience** → **Publish app**. Then redo
-[Step 6f](SETUP.md#6f--get-a-refresh-token) to get a fresh refresh token, and
+`npm run setup` to get a fresh refresh token, and
 update `GMAIL_REFRESH_TOKEN` both in `.env.local` and in Vercel.
 
 ### `redirect_uri_mismatch` in the OAuth Playground
@@ -158,7 +158,7 @@ Open the failed deployment and read the log's last lines. Usually one of:
 - **A trailing space in a pasted value** — re-paste it carefully.
 - **A missing variable other than Supabase** — check the log for the name it
   complains about and compare against the table in
-  [Step 7](SETUP.md#step-7--put-it-on-the-internet).
+  [Step 8](SETUP.md#step-8--put-it-on-the-internet).
 
 ### The live site shows "APP_PASSPHRASE is not set on this deployment"
 

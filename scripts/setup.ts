@@ -8,7 +8,7 @@
  * console if you do not have an OAuth client yet, and — the point of the
  * exercise — mints a Gmail refresh token through a real OAuth flow on this
  * machine, replacing the seven-step tour of the Google OAuth Playground that
- * SETUP.md step 6f describes. It writes .env.local and nothing else.
+ * SETUP.md's appendix describes. It writes .env.local and nothing else.
  *
  * What it deliberately does NOT do:
  *   - create accounts or projects (Supabase, Google, Vercel all require a human

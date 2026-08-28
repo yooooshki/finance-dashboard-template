@@ -7,8 +7,13 @@ worked.
 You do not need to understand the code. You are assembling four free services
 and telling them about each other.
 
-**Time:** about an hour, most of it waiting for things to install.
+**Time:** about 40 minutes, most of it waiting for things to install.
 **Cost:** nothing. Every service here has a free tier this app fits inside.
+
+The shape of it: you create the accounts and click through two consoles
+(Supabase and, optionally, Google). Then **one command** — `npm run setup` —
+collects everything and wires it together, and a second — `npm run doctor` —
+tells you whether it worked.
 
 ---
 
@@ -52,7 +57,7 @@ all of them to keep life simple.
 | [github.com](https://github.com) | Stores your copy of the code |
 | [supabase.com](https://supabase.com) | The database — where your transactions live |
 | [vercel.com](https://vercel.com) | Puts the app on the internet |
-| A Google account | Only if you want automatic email scanning (Step 6) |
+| A Google account | Only if you want automatic email scanning (Step 4) |
 
 Sign up for GitHub **first**, then use "Continue with GitHub" on Supabase and
 Vercel. That saves you two passwords.
@@ -163,18 +168,25 @@ them.
 2. Open the file `supabase/schema.sql` from your project folder in any text
    editor (TextEdit, Notepad, or VS Code) and **copy everything** in it.
 3. Paste it into the Supabase SQL editor and click **Run**.
+4. Do the same for each file in `supabase/migrations/`, oldest first.
 
 You should see **Success. No rows returned.** That's what success looks like
 here — it means the tables were created, not that nothing happened.
 
 Click **Table Editor** in the sidebar and you should now see five tables:
 `categories`, `payment_types`, `transactions`, `merchant_categories`, and
-`budgets`. `categories` will have 17 starter rows in it.
+`budgets`. `categories` will have starter rows in it.
 
-### Copy your two keys
+> **Why is this the one step you do by hand?** Creating tables is a different
+> kind of database instruction from reading and writing rows, and the library
+> this app uses can only do the latter. Automating it would mean adding
+> another tool, or handing a script a credential that can control your whole
+> Supabase account. Pasting it once is the smaller price.
+
+### Find your two keys — don't copy them anywhere yet
 
 1. Click the **gear icon** (Project Settings) → **API keys**.
-2. Leave this tab open. You need two values from it in the next step:
+2. **Leave this tab open.** Step 5 will ask you for two values from it:
    - **Project URL** — looks like `https://abcdefgh.supabase.co`
    - **`service_role` key** — a very long string. You may need to click an eye
      icon or "Reveal" to see it.
@@ -186,62 +198,156 @@ Click **Table Editor** in the sidebar and you should now see five tables:
 
 ---
 
-## Step 4 — Put your keys in the app
+## Step 4 — Google, for automatic email scanning (optional)
 
-> **Shortcut:** `npm run setup` does this whole step — it asks for the two
-> Supabase keys, generates both passwords, and writes `.env.local` for you.
-> It is safe to run more than once. The manual instructions below still work
-> if you prefer to see every value yourself.
+This is what lets the app read your bank's alert emails and turn them into
+transactions by itself. Skip it and everything else still works — you just log
+spending by hand on the `/add` page.
 
-Your keys live in a file called `.env.local`, which never leaves your computer.
-It's already listed in `.gitignore`, so Git will refuse to upload it.
+> **Check this first:** out of the box the app only understands alert emails
+> from **UOB**, **Citibank Singapore** and **DBS**. Another bank needs a parser
+> written for it — Claude can help, see *Adding your bank* in the README. If
+> you're not with those banks, **skip to Step 5**.
 
-Create it by copying the example:
+**You do not have to read this section.** `npm run setup` in the next step
+walks you through these same five pages one at a time, opening each in your
+browser and telling you what to click. Read on if you would rather see the
+whole route before you start driving; otherwise go to Step 5 and answer **no**
+when it asks whether you already have a Google OAuth client.
 
-```bash
-cp .env.local.example .env.local
-```
+> **Why can't this be automated?** Google offers no API for creating an OAuth
+> client, and this app cannot ship a shared one: Gmail access is a *restricted*
+> permission, and an app that hasn't been through Google's paid security
+> assessment is capped at 100 users. Your own client has no such cap, because
+> you are its only user. That is the whole reason this section exists.
 
-*(On Windows PowerShell, use `copy .env.local.example .env.local`.)*
+### 4a — Create a Google Cloud project
 
-Now open `.env.local` in a text editor. You'll see lines with an `=` and
-nothing after it. Fill in the values, with **no spaces around the `=`** and
-**no quotes**:
+1. Go to [console.cloud.google.com/projectcreate](https://console.cloud.google.com/projectcreate).
+2. Name it `finance-dashboard` → **Create**.
+3. **Make sure that new project is selected in the top bar** before continuing.
+   Doing the next steps in the wrong project is the single most common mistake
+   here.
 
-```
-SUPABASE_URL=https://abcdefgh.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...the-very-long-key...
-```
+### 4b — Turn on the Gmail API
 
-### Generate two passwords
+Go to [the Gmail API page](https://console.cloud.google.com/apis/library/gmail.googleapis.com)
+and click **Enable**. If the button says **Manage**, it's already on.
 
-The app needs two random secrets of its own. Run these and paste the output
-into the matching lines:
+### 4c — Name the app
 
-```bash
-node -e "console.log(require('crypto').randomBytes(24).toString('base64'))"
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+Go to [Branding](https://console.cloud.google.com/auth/branding) under
+*Google Auth Platform*.
 
-- The first is your `APP_PASSPHRASE` — **this is what you'll type to log in**,
-  so save it in your password manager.
-- The second is your `CRON_SECRET` — you never type this one, it's just a
-  password the app uses on itself.
+1. **App name:** anything you'll recognise, e.g. `Finance Dashboard`.
+2. **User support email** and **contact email:** your own address.
+3. **Audience:** **External**. (*Internal* only exists for Google Workspace
+   organisations and won't appear for personal accounts.)
+4. Agree to the policy and save.
 
-Leave the `GMAIL_*` lines empty for now. Save the file.
+### 4d — Publish it ← don't skip this
 
-### Check it worked
+Go to [Audience](https://console.cloud.google.com/auth/audience). Under
+*Publishing status* it says **Testing**. Click **Publish app** and confirm.
 
-```bash
-npm run verify-schema
-```
+> **Why this matters:** while the app is in *Testing*, Google **expires your
+> access after 7 days**. Everything will work perfectly, and then a week later
+> the scan silently stops with an `invalid_grant` error. Publishing avoids
+> this entirely.
+>
+> Google will warn you the app is "unverified". That's expected and fine — you
+> are the only user, and verification only exists for apps published to
+> strangers. You'll click through one such warning in Step 5.
 
-You want a list of `OK` lines — one per table. If you see `FAIL`, your URL or
-key is wrong: re-copy them, watching for a missing character at either end.
+### 4e — Create the OAuth client
+
+Go to [Clients](https://console.cloud.google.com/auth/clients) → **Create client**.
+
+1. **Application type: Desktop app.** ← This matters. It is the type that
+   accepts the loopback sign-in `npm run setup` uses, with nothing else to
+   configure.
+2. Name it anything → **Create**.
+
+A box shows your **Client ID** and **Client secret**. Leave it open — Step 5
+asks for both. (You can always find them again on that same Clients page.)
 
 ---
 
-## Step 5 — Run it
+## Step 5 — Run the setup command
+
+```bash
+npm run setup
+```
+
+One run does the whole configuration. Have ready: the Supabase tab from Step 3,
+and the Client ID and secret from Step 4 if you did it.
+
+It asks, in this order:
+
+1. **Project URL** and **`service_role` key** — from your Supabase tab.
+2. **A passphrase to log in with.** Press Enter and it invents a strong one and
+   shows it to you **once**. Save it in your password manager immediately —
+   this is your login, and nothing can recover it later.
+3. **Connect Gmail?** Answer no to skip email scanning entirely.
+4. **Do you already have a Google OAuth client?**
+   - **Yes** (you did Step 4) — paste the Client ID and secret.
+   - **No** — it opens each of the five Google pages in turn and tells you what
+     to click on each, then asks for the ID and secret at the end.
+5. Your browser opens Google's consent screen. Sign in with **the account whose
+   inbox receives the bank emails**. You'll see *"Google hasn't verified this
+   app"* — click **Advanced** → **Go to (your app name)**. It's your own app.
+   Click **Allow**.
+
+The window says *"Connected."* and the terminal confirms which mailbox it
+reached. It writes everything into `.env.local`, a file that stays on your
+computer and is never uploaded.
+
+Useful to know:
+
+- **It is safe to run again.** Anything already filled in is kept, and the file
+  is backed up before it's rewritten.
+- **Backing out part-way is safe too** — press `q` at the Google walkthrough
+  and everything you entered before it is still saved.
+- On a computer with no browser, `SETUP_NO_BROWSER=1 npm run setup` prints the
+  sign-in link instead of opening it.
+- If your OAuth client is a *Web application* rather than a *Desktop app*, add
+  `http://localhost:8910` to its authorised redirect URIs, or Google will
+  refuse the sign-in.
+
+---
+
+## Step 6 — Check it worked
+
+```bash
+npm run doctor
+```
+
+This reads everything and changes nothing. You get one line per requirement:
+
+```
+Environment (values are never printed)
+  PASS  SUPABASE_URL set
+Database
+  PASS  categories (17 rows)
+  PASS  all 2 cards can be matched to alerts
+Gmail ingestion
+  PASS  refresh token works — mailbox you***@gmail.com
+  INFO  0 unread in the window — the next scan would import 0
+Backups
+  WARN  no backups yet
+Scheduled scan
+  PASS  /api/email-scan at 0 0 * * * UTC = 08:00 SGT daily
+```
+
+Every **FAIL** names the step in this guide that fixes it. Warnings are things
+to know about, not broken things.
+
+Run this any time something looks wrong later — it's the fastest way to find
+out whether the problem is your keys, your database, or your Gmail connection.
+
+---
+
+## Step 7 — Run it
 
 ```bash
 npm run dev
@@ -252,7 +358,7 @@ should see the dashboard, empty.
 
 > Locally there's no login screen even though you set a passphrase — that's
 > deliberate, so development stays quick. The passphrase gate switches on
-> automatically when you deploy in Step 7.
+> automatically when you deploy in Step 8.
 
 To stop the app later, click the terminal and press `Ctrl + C`. To start it
 again, `npm run dev`.
@@ -267,169 +373,19 @@ Click through to **Settings** and:
   the day it does start. Set it to 16 and the period filed under August runs
   16 July → 15 August, the way the bank actually bills you.
 - **Budgets** — add one for any category you want a progress meter for.
-- **Last 4 digits** — only needed for Step 6. This is how the app works out
-  which card an email belongs to. Once saved it's write-only: the app never
+- **Last 4 digits** — only needed if you did Step 4. This is how the app works
+  out which card an email belongs to. Once saved it's write-only: the app never
   shows it back to you, so the field will read `••••`.
 
 Now add a transaction by hand from the **/add** page to confirm the whole
 chain works. It should appear on the Overview immediately.
 
-**If it does, the app works.** Step 6 is optional; skip to Step 7 if you just
-want it online.
+### Test the email scan
 
----
+If you did Step 4, go to **Settings** → **Run scan now**.
 
-## Step 6 — Automatic email scanning (optional)
-
-This lets the app read your bank's alert emails and turn them into
-transactions automatically.
-
-> **Check this first:** out of the box the app only understands alert emails
-> from **UOB**, **Citibank Singapore** and **DBS**. Another bank needs a parser
-> written for it — Claude can help, see *Adding your bank* in the README. If
-> you're not with those banks, **skip this step** and log spending through
-> `/add`.
-
-This is the fiddliest part of the whole setup. It's ten minutes of clicking
-through Google's console. Go slowly and it's fine.
-
-> **`npm run setup` will walk you through it.** Answer "no" when it asks
-> whether you already have an OAuth client, and it opens each of the five
-> Google pages in turn and tells you what to click on each one. The steps
-> below are the same thing written out, with more detail — read them if you
-> would rather see where you are going first.
->
-> The clicking itself cannot be automated: Google has no API for creating an
-> OAuth client, and the app cannot ship a shared one, because Gmail access is
-> a "restricted" permission — an app that has not been through Google's paid
-> security assessment is capped at 100 users. Your own client has no such cap
-> because you are its only user.
-
-### 6a — Create a Google Cloud project
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com).
-2. Click the project dropdown in the top bar → **New Project**.
-3. Name it `finance-dashboard` → **Create**.
-4. **Make sure that new project is selected in the top bar** before continuing.
-   Doing the next steps in the wrong project is the single most common mistake
-   here.
-
-### 6b — Turn on the Gmail API
-
-1. In the search bar at the top, search **Gmail API**.
-2. Click it, then click **Enable**.
-
-### 6c — Set up the consent screen
-
-In the left sidebar find **Google Auth Platform** (older accounts may still
-call this *APIs & Services → OAuth consent screen*).
-
-1. Click **Get started**.
-2. **App name:** anything, e.g. `Finance Dashboard`. **User support email:**
-   your own address.
-3. **Audience:** choose **External**. (*Internal* only exists for Google
-   Workspace organisations and won't appear for personal accounts.)
-4. **Contact information:** your email again.
-5. Agree to the policy and click **Create**.
-
-### 6d — Publish the app ← don't skip this
-
-Go to the **Audience** tab. Under *Publishing status* it says **Testing**.
-Click **Publish app** and confirm.
-
-> **Why this matters:** while the app is in *Testing*, Google **expires your
-> access after 7 days**. Everything will work perfectly, and then a week later
-> the scan silently stops with an `invalid_grant` error. Publishing avoids
-> this entirely.
->
-> Google will warn you the app is "unverified". That's expected and fine — you
-> are the only user, and verification only exists for apps published to
-> strangers. You'll click through one "Google hasn't verified this app"
-> warning in step 6f.
-
-### 6e — Create your credentials
-
-Go to the **Clients** tab → **Create client**.
-
-1. **Application type: Web application.** ← This matters. The *Desktop app*
-   type cannot be used with the tool in the next step.
-2. Name it anything.
-3. Under **Authorised redirect URIs**, click **Add URI** and paste exactly:
-
-   ```
-   https://developers.google.com/oauthplayground
-   ```
-
-   No trailing slash. A trailing slash gives you a `redirect_uri_mismatch`
-   error later.
-4. Click **Create**.
-
-A box shows your **Client ID** and **Client secret**. Copy both into
-`.env.local` now:
-
-```
-GMAIL_CLIENT_ID=...apps.googleusercontent.com
-GMAIL_CLIENT_SECRET=...
-```
-
-### 6f — Get a refresh token
-
-A refresh token is a long-lived pass that lets the app check your mail without
-you logging in every time.
-
-**The easy way — let the app do it:**
-
-```bash
-npm run setup
-```
-
-Answer yes at the Gmail step and paste in the Client ID and secret from 6e. It
-opens Google's consent screen, catches the answer, checks the token works
-against your inbox, and writes it into `.env.local` for you. Then skip to 6g.
-
-If your OAuth client is a *Web application* rather than a *Desktop app*, add
-`http://localhost:8910` to its authorised redirect URIs first, or Google will
-refuse the redirect. On a machine with no browser, run
-`SETUP_NO_BROWSER=1 npm run setup` and open the printed link elsewhere.
-
-**The manual way** — if you would rather do it yourself, Google has a tool that
-hands you one.
-
-1. Go to
-   [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground).
-2. Click the **gear icon** (⚙️) at the top right.
-3. Tick **Use your own OAuth credentials**.
-4. Paste in the same Client ID and Client secret from 6e. Close the gear panel.
-5. In the left-hand list, ignore the categories and use the box at the bottom
-   labelled *"Input your own scopes"*. Paste both of these, separated by a
-   space:
-
-   ```
-   https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify
-   ```
-
-6. Click **Authorize APIs**. Sign in with the Google account **whose inbox
-   receives the bank emails**.
-7. You'll hit the "Google hasn't verified this app" screen. Click
-   **Advanced** → **Go to [your app name] (unsafe)**. This is your own app;
-   it's safe.
-8. Click **Allow**.
-9. Back in the playground, click **Exchange authorization code for tokens**.
-10. Copy the **Refresh token** (it starts with `1//`) into `.env.local`:
-
-```
-GMAIL_REFRESH_TOKEN=1//0g...
-```
-
-### 6g — Test it
-
-Stop the app (`Ctrl + C`) and start it again with `npm run dev` — it only
-reads `.env.local` on startup, so your new keys won't load until you restart.
-
-Go to **Settings** → **Run scan now**.
-
-The scan looks for **unread** emails from those three banks **received in the
-last 24 hours**. If you have none, it will correctly find nothing. To test it
+The scan looks for **unread** emails from those three banks received in the
+**last 7 days**. If you have none, it will correctly find nothing. To test it
 properly, mark a recent bank alert as unread in Gmail first, then scan again
 and check the **/pending** page.
 
@@ -438,7 +394,7 @@ and check the **/pending** page.
 
 ---
 
-## Step 7 — Put it on the internet
+## Step 8 — Put it on the internet
 
 ### Push your code to GitHub
 
@@ -466,9 +422,9 @@ left, value on the right:
 | `SUPABASE_SERVICE_ROLE_KEY` | yes |
 | `APP_PASSPHRASE` | **yes** — the deployment refuses to run without it |
 | `CRON_SECRET` | yes |
-| `GMAIL_CLIENT_ID` | only if you did Step 6 |
-| `GMAIL_CLIENT_SECRET` | only if you did Step 6 |
-| `GMAIL_REFRESH_TOKEN` | only if you did Step 6 |
+| `GMAIL_CLIENT_ID` | only if you did Step 4 |
+| `GMAIL_CLIENT_SECRET` | only if you did Step 4 |
+| `GMAIL_REFRESH_TOKEN` | only if you did Step 4 |
 
 Watch for **trailing spaces** when pasting — the commonest deploy failure.
 
@@ -483,7 +439,7 @@ your `APP_PASSPHRASE`. It remembers you for 90 days, on each device.
 
 ### The daily scan
 
-If you did Step 6, `vercel.json` already schedules a scan every day at
+If you did Step 4, `vercel.json` already schedules a scan every day at
 **00:00 UTC (08:00 Singapore time)**. Vercel handles authentication for it
 automatically. To change the hour, edit the `schedule` line in `vercel.json`
 and push again — it's in [cron format](https://crontab.guru), and the time is
@@ -497,10 +453,96 @@ deploy step.
 
 ---
 
+## Step 9 — Back it up, weekly
+
+```bash
+npm run backup
+```
+
+Your Supabase project is the only copy of your spending history, and the free
+tier has no way to rewind it. This writes all five tables to a folder *beside*
+your project — outside it, so it can never be uploaded — as a file you can
+restore from and a spreadsheet you can read.
+
+Do it weekly. `npm run doctor` starts warning you once the newest backup is
+more than ten days old. The README has a one-off command that schedules it
+automatically on a Mac.
+
+---
+
 ## You're done
 
-- **Local development:** `npm run dev` → http://localhost:3000
-- **Live app:** your Vercel URL, behind your passphrase
-- **Changing anything:** edit, `git add -A`, `git commit -m "..."`, `git push`
+Add expenses by hand at `/add`, review anything the scan finds at `/pending`,
+and check `npm run doctor` if something ever looks wrong.
 
-If something breaks, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+---
+
+## Appendix — doing it by hand
+
+Everything above can be done manually. You do not need any of this if
+`npm run setup` worked.
+
+### Writing `.env.local` yourself
+
+```bash
+cp .env.local.example .env.local
+```
+
+*(On Windows PowerShell, use `copy .env.local.example .env.local`.)*
+
+Open it in a text editor and fill in the values, with **no spaces around the
+`=`** and **no quotes**:
+
+```
+SUPABASE_URL=https://abcdefgh.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOi...the-very-long-key...
+```
+
+The app needs two random secrets of its own. Run these and paste the output
+into the matching lines:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(24).toString('base64'))"
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+- The first is your `APP_PASSPHRASE` — **this is what you type to log in**, so
+  save it in your password manager.
+- The second is your `CRON_SECRET` — you never type this one.
+
+Check it with `npm run doctor`, or `npm run verify-schema` for the database
+alone.
+
+### Getting a refresh token with the OAuth Playground
+
+The older route, before `npm run setup` existed. It needs a **Web application**
+OAuth client (not a Desktop app), with
+`https://developers.google.com/oauthplayground` — no trailing slash — added
+under **Authorised redirect URIs**.
+
+1. Go to
+   [developers.google.com/oauthplayground](https://developers.google.com/oauthplayground).
+2. Click the **gear icon** (⚙️) at the top right.
+3. Tick **Use your own OAuth credentials**.
+4. Paste in your Client ID and Client secret. Close the gear panel.
+5. In the left-hand list, ignore the categories and use the box at the bottom
+   labelled *"Input your own scopes"*. Paste both of these, separated by a
+   space:
+
+   ```
+   https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.modify
+   ```
+
+6. Click **Authorize APIs**. Sign in with the Google account **whose inbox
+   receives the bank emails**.
+7. At the "Google hasn't verified this app" screen, click **Advanced** →
+   **Go to (your app name) (unsafe)**. This is your own app; it's safe.
+8. Click **Allow**.
+9. Back in the playground, click **Exchange authorization code for tokens**.
+10. Copy the **Refresh token** (it starts with `1//`) into `.env.local`:
+
+```
+GMAIL_REFRESH_TOKEN=1//0g...
+```
+
+Restart the app afterwards — it only reads `.env.local` on startup.

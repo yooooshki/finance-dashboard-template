@@ -70,12 +70,12 @@ function checkEnv(): { gmailConfigured: boolean } {
 
   for (const spec of ENV.filter((e) => e.requirement === 'always')) {
     if (isSet(spec.name)) line('PASS', `${spec.name} set`);
-    else line('FAIL', `${spec.name} missing`, 'SETUP.md step 4 — copy it from your Supabase project settings');
+    else line('FAIL', `${spec.name} missing`, 'SETUP.md step 5 — `npm run setup` collects it, or step 3 to find it in Supabase');
   }
 
   for (const spec of ENV.filter((e) => e.requirement === 'production')) {
     if (isSet(spec.name)) line('PASS', `${spec.name} set`);
-    else line('WARN', `${spec.name} not set locally — ${spec.note}`, 'Required on the deployed app: SETUP.md step 7');
+    else line('WARN', `${spec.name} not set locally — ${spec.note}`, 'Required on the deployed app: SETUP.md step 8');
   }
 
   const gmailVars = ENV.filter((e) => e.requirement === 'gmail');
@@ -89,7 +89,7 @@ function checkEnv(): { gmailConfigured: boolean } {
     return { gmailConfigured: false };
   }
   for (const v of gmailVars) {
-    if (!isSet(v.name)) line('FAIL', `${v.name} missing while the other Gmail vars are set`, 'SETUP.md step 6 — finish the Gmail setup or clear all three');
+    if (!isSet(v.name)) line('FAIL', `${v.name} missing while the other Gmail vars are set`, 'SETUP.md step 5 — re-run `npm run setup`, or clear all three');
   }
   return { gmailConfigured: false };
 }
@@ -143,8 +143,8 @@ async function checkGmail(configured: boolean) {
     const invalidGrant = /invalid_grant/i.test(access.error);
     line('FAIL', `refresh token rejected: ${access.error.slice(0, 90)}`,
       invalidGrant
-        ? 'Usually the OAuth consent screen is still in Testing (tokens expire after 7 days) — publish it, then mint a new token: SETUP.md steps 6d and 6f'
-        : 'SETUP.md step 6 — re-check the Gmail credentials');
+        ? 'Usually the OAuth consent screen is still in Testing (tokens expire after 7 days) — publish it (SETUP.md step 4d), then re-run `npm run setup` to mint a new token'
+        : 'SETUP.md step 4 — re-check the Google OAuth client');
     return;
   }
   line('PASS', `refresh token works — mailbox ${maskEmail(access.mailbox)}`);
